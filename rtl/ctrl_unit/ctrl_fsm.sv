@@ -137,6 +137,9 @@ module ctrl_fsm
    logic 				   s_twd_ext_count_en,s_twd_tcdm_count_en;
    logic [TRANS_SID_WIDTH-1:0] 		   s_trans_sid;
    logic 				   s_arb_barrier;
+
+   // Up to 8 bits of additional address bits
+   logic [31-(MCHAN_LEN_WIDTH+6):0] ext_addr_extension;
    
    //**********************************************************
    //*************** ADDRESS DECODER **************************
@@ -1012,6 +1015,12 @@ module ctrl_fsm
 	  end
      end
    
+   always_ff @(posedge clk_i) begin
+	  if ( CS == CMD && ctrl_targ_type_i == 1'b0 && cmd_gnt_i == 1'b1 ) begin
+	     ext_addr_extension <= ctrl_targ_data_i[31:MCHAN_LEN_WIDTH+6];
+	  end
+   end 
+
    assign cmd_len_o               = ctrl_targ_data_i[MCHAN_LEN_WIDTH-1:0				] - 1;  // TRANSFER LENGTH
    assign cmd_opc_o               = ctrl_targ_data_i[MCHAN_LEN_WIDTH  :MCHAN_LEN_WIDTH  ]; // TRANSFER OPCODE
    assign cmd_inc_o               = ctrl_targ_data_i[MCHAN_LEN_WIDTH+1:MCHAN_LEN_WIDTH+1]; // INCREMENTAL TRANSFER
@@ -1025,7 +1034,12 @@ module ctrl_fsm
    assign cmd_sid_o               = s_trans_sid;
    
    assign tcdm_add_o              = ctrl_targ_data_i[TCDM_ADD_WIDTH-1:0];
-   assign ext_add_o               = ctrl_targ_data_i[EXT_ADD_WIDTH-1:0];
+   
+   if (EXT_ADD_WIDTH > 32) begin
+	   assign ext_add_o               = {ext_addr_extension, ctrl_targ_data_i[32-1:0]};
+   end else begin
+	   assign ext_add_o               = {ext_addr_extension, ctrl_targ_data_i[EXT_ADD_WIDTH-1:0]};
+   end
    
    assign twd_ext_queue_count_o   = s_twd_ext_count[TWD_COUNT_WIDTH:0]-1;
    assign twd_ext_queue_stride_o  = ctrl_targ_data_i[TWD_STRIDE_WIDTH:0]-1;

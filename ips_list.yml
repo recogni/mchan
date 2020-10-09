@@ -19,6 +19,6 @@
 #
 
 common_cells:
-  commit: v1.13.1
+  commit: scorpio-v1-tapeout
   domain: [soc, cluster]
-  group: pulp-platform
+  group: recogni
