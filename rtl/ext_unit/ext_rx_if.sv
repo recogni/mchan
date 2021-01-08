@@ -125,7 +125,38 @@ module ext_rx_if
    //**********************************************************
    //*************** RESPONSE CONTROL CHANNEL *****************
    //**********************************************************
-   
+
+     // Track which ID's have active read responses
+
+     logic [2**EXT_TID_WIDTH-1:0] tid_busy;
+     always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+                tid_busy <= '0;
+        end else begin
+                for (integer i=0; i<2**EXT_TID_WIDTH; i++) begin
+                        if ( tid_busy[i]     == '0 &&
+                             axi_master_r_id_i    == i &&
+                             trans_rx_gnt_i  == 1'b1 &&
+		             tcdm_gnt_i      == 1'b1 &&
+		             rx_data_gnt_i   == 1'b1 &&
+		             axi_master_r_valid_i == 1'b1 && // TRANSACTION STARTS WHEN R_VALID ON DATA CHANNEL IS DETECTED
+                             axi_master_r_last_i  == 1'b0) begin
+                                tid_busy[i] <= '1;
+                        end else begin 
+                                if ( axi_master_r_id_i    == i &&
+                                      trans_rx_gnt_i       == 1'b1 &&
+                                      tcdm_gnt_i           == 1'b1 &&
+                                      rx_data_gnt_i        == 1'b1 && // TRANSACTION FINISHES WHAN LAST BEAT ON DATA CHANNEL IS DETECTED
+                                      axi_master_r_last_i  == 1'b1 &&
+                                      axi_master_r_valid_i == 1'b1 ) begin
+                                        tid_busy[i] <= '0;
+                                end
+                        end
+                end
+        end
+     end
+
+
    // UPDATES THE STATE
    always_ff @(posedge clk_i, negedge rst_ni)
      begin
@@ -174,13 +205,26 @@ module ext_rx_if
 	    end
 	  
 	  TRANS_RUN:
-	    begin
+            begin
+               if ( trans_rx_gnt_i       == 1'b1 &&
+                    tcdm_gnt_i           == 1'b1 &&
+                    rx_data_gnt_i        == 1'b1 && // TRANSACTION FINISHES WHAN LAST BEAT ON DATA CHANNEL IS DETECTED
+                    tid_busy[res_tid_o]  == 1'b0 &&
+                    axi_master_r_valid_i == 1'b1 ) begin
+                        tcdm_req_o     = 1'b1;
+               end
+
 	       if ( trans_rx_gnt_i       == 1'b1 &&
 		    tcdm_gnt_i           == 1'b1 &&
 		    rx_data_gnt_i        == 1'b1 && // TRANSACTION FINISHES WHAN LAST BEAT ON DATA CHANNEL IS DETECTED
 		    axi_master_r_last_i  == 1'b1 &&
-		    axi_master_r_valid_i == 1'b1 ) // RUNNING
-		 NS = TRANS_IDLE;
+                    axi_master_r_valid_i == 1'b1  ) // RUNNING
+                 if ( |(tid_busy & ~( 1 << res_tid_o ) ) ) begin
+                        NS =  TRANS_RUN;
+                 end else begin
+                        NS = TRANS_IDLE;
+                 end
+                 
 	       else
 		 NS = TRANS_RUN;
 	    end

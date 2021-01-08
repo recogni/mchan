@@ -190,7 +190,7 @@ module tcdm_unit
    //*************** TCDM CMD UNPACK RX ***********************
    //**********************************************************
    
-   tcdm_cmd_unpack 
+   tcdm_cmd_unpack_rx 
      #(
        .TRANS_SID_WIDTH(TRANS_SID_WIDTH),
        .TCDM_ADD_WIDTH(TCDM_ADD_WIDTH),
@@ -203,6 +203,8 @@ module tcdm_unit
       .clk_i(clk_i),
       .rst_ni(rst_ni),
       
+      .act_sid_i(tcdm_rx_sid_i),
+
       .cmd_sid_i(s_tcdm_rx_sid),
       .cmd_opc_i(s_tcdm_rx_opc),
       .cmd_len_i(s_tcdm_rx_len),

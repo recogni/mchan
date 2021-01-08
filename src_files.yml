@@ -28,6 +28,7 @@ mchan:
     ./rtl/ext_unit/ext_unit.sv,
     ./rtl/ext_unit/ext_w_buffer.sv,
     ./rtl/tcdm_unit/tcdm_cmd_unpack.sv,
+    ./rtl/tcdm_unit/tcdm_cmd_unpack_rx.sv,
     ./rtl/tcdm_unit/tcdm_rx_if.sv,
     ./rtl/tcdm_unit/tcdm_synch.sv,
     ./rtl/tcdm_unit/tcdm_tx_if.sv,
